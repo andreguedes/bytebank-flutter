@@ -1,3 +1,5 @@
+import 'package:bytebank/database/app_database.dart';
+import 'package:bytebank/models/contact.dart';
 import 'package:bytebank/screens/contact_form.dart';
 import 'package:flutter/material.dart';
 
@@ -8,21 +10,39 @@ class ContactsList extends StatelessWidget {
       appBar: AppBar(
         title: Text('Contacts'),
       ),
-      body: ListView(
-        children: <Widget>[
-          Card(
-            child: ListTile(
-              title: Text(
-                'André',
-                style: TextStyle(fontSize: 24.0),
-              ),
-              subtitle: Text(
-                'Conta 1000',
-                style: TextStyle(fontSize: 16.0),
-              ),
-            ),
-          )
-        ],
+      body: FutureBuilder<List<Contact>>(
+        initialData: List(),
+        builder: (context, snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+              break;
+            case ConnectionState.waiting:
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    CircularProgressIndicator(),
+                    Text('Loading')
+                  ],
+                ),
+              );
+              break;
+            case ConnectionState.active:
+              break;
+            case ConnectionState.done:
+              final List<Contact> contacts = snapshot.data;
+              return ListView.builder(
+                itemBuilder: (context, index) {
+                  return _ContactItem(contacts[index]);
+                },
+                itemCount: contacts.length,
+              );
+              break;
+          }
+          return Center(child: Text('Unknown error'));
+        },
+        future: findAll(),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -31,6 +51,28 @@ class ContactsList extends StatelessWidget {
               .then((newContact) => debugPrint(newContact.toString()));
         },
         child: Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class _ContactItem extends StatelessWidget {
+  final Contact contact;
+
+  _ContactItem(this.contact);
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        title: Text(
+          contact.name,
+          style: TextStyle(fontSize: 24.0),
+        ),
+        subtitle: Text(
+          'Conta ' + contact.accountNumber.toString(),
+          style: TextStyle(fontSize: 16.0),
+        ),
       ),
     );
   }
