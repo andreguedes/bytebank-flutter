@@ -9,42 +9,40 @@ const CONTACT_ID = 'id';
 const CONTACT_NAME = 'name';
 const CONTACT_ACCOUNT_NUMBER = 'account_number';
 
-Future<Database> createDatabase() {
-  return getDatabasesPath().then((dbPath) {
-    var path = join(dbPath, DB_NAME);
-    return openDatabase(
-      path,
-      onCreate: (db, version) {
-        db.execute('CREATE TABLE $CONTACTS_TABLE('
-            '$CONTACT_ID INTEGER PRIMARY KEY, '
-            '$CONTACT_NAME TEXT, '
-            '$CONTACT_ACCOUNT_NUMBER INTEGER)');
-      },
-      version: VERSION,
+Future<Database> getDatabase() async {
+  final String path = join(await getDatabasesPath(), DB_NAME);
+  return openDatabase(
+    path,
+    onCreate: (db, version) {
+      db.execute('CREATE TABLE $CONTACTS_TABLE('
+          '$CONTACT_ID INTEGER PRIMARY KEY, '
+          '$CONTACT_NAME TEXT, '
+          '$CONTACT_ACCOUNT_NUMBER INTEGER)');
+    },
+    version: VERSION,
 //      onDowngrade: onDatabaseDowngradeDelete,
+  );
+}
+
+Future<int> save(Contact contact) async {
+  final Database db = await getDatabase();
+  final Map<String, dynamic> contactMap = Map();
+  contactMap[CONTACT_NAME] = contact.name;
+  contactMap[CONTACT_ACCOUNT_NUMBER] = contact.accountNumber;
+  return db.insert(CONTACTS_TABLE, contactMap);
+}
+
+Future<List<Contact>> findAll() async {
+  final Database db = await getDatabase();
+  final List<Map<String, dynamic>> result = await db.query(CONTACTS_TABLE);
+  final List<Contact> contacts = List();
+  for (Map<String, dynamic> row in result) {
+    final Contact contact = Contact(
+      row[CONTACT_ID],
+      row[CONTACT_NAME],
+      row[CONTACT_ACCOUNT_NUMBER],
     );
-  });
-}
-
-Future<int> save(Contact contact) {
-  return createDatabase().then((db) {
-    final Map<String, dynamic> contactMap = Map();
-    contactMap[CONTACT_NAME] = contact.name;
-    contactMap[CONTACT_ACCOUNT_NUMBER] = contact.accountNumber;
-    return db.insert(CONTACTS_TABLE, contactMap);
-  });
-}
-
-Future<List<Contact>> findAll() {
-  return createDatabase().then((db) {
-    return db.query(CONTACTS_TABLE).then((maps) {
-      final List<Contact> contacts = List();
-      for (Map<String, dynamic> map in maps) {
-        final Contact contact = Contact(
-            map[CONTACT_ID], map[CONTACT_NAME], map[CONTACT_ACCOUNT_NUMBER]);
-        contacts.add(contact);
-      }
-      return contacts;
-    });
-  });
+    contacts.add(contact);
+  }
+  return contacts;
 }
