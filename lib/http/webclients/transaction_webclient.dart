@@ -14,13 +14,15 @@ class TransactionWebClient {
         .toList();
   }
 
-  Future<Transaction> save(Transaction transaction) async {
+  Future<Transaction> save(Transaction transaction, String password) async {
     Map<String, dynamic> transactionMap = transaction.toJson();
     final Response response = await client.post(
       BASE_URL,
-      headers: {'Content-Type': 'application/json', 'password': '1000'},
+      headers: {'Content-Type': 'application/json', 'password': password},
       body: jsonEncode(transactionMap),
     );
+    if (response.statusCode == 400) throw Exception('An error occur submitting a transaction');
+    if (response.statusCode == 401) throw Exception('Authentication failed');
     return Transaction.fromJson(jsonDecode(response.body));
   }
 }
